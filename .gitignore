@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+.virtualenv/
+
+# Django specific
+db.sqlite3
+*.log
+local_settings.py
+media/
+staticfiles/
+static/
+build/
+dist/
+*.egg-info/
+
+# Environment variables
+.env
+.env
+
+# VS Code / PyCharm
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Migrations cache
+*/migrations/__pycache__/
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Packaging / caches
+pip-wheel-metadata/
+pip-log.txt
+.cache/
+
+# MyPy / type checkers
+.mypy_cache/
+
+# Misc
+*.sqlite3
+dump.rdb
+jobseeker_db_backup.sql
+celerybeat-schedule
+
+
