@@ -27,8 +27,8 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
+DEBUG = os.getenv('DEBUG')
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 
 # Application definition
 
@@ -96,15 +96,16 @@ else:# production
     'default': dj_database_url.config(
         default=os.getenv("DATABASE_URL"),
         conn_max_age=600,
-        ssl_require=os.getenv("DATABASE_SSL", "False") == "True" and not DEBUG
+        ssl_require=os.getenv("DATABASE_SSL")
     )
 }
+
 CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION":os.getenv("REDIS_URL"),
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": os.getenv("REDIS_URL"),
+        }
     }
-}
 
 
 
@@ -146,7 +147,7 @@ STATIC_URL = 'static/'
 #cors
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS").split(",")
 # for development only chanege in production
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
