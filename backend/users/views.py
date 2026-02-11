@@ -23,9 +23,11 @@ class PaymentVerifyThrottle(UserRateThrottle):
 def create_order(request):
     captcha_token = request.data.get("captcha_token")
     if not captcha_token:
-        raise ValidationError({"captcha_token": "This field is required."})
+        return Response(
+            {"error": "Captcha token is required"} , status=400)
     if not verify_recaptcha(captcha_token, "create_order"):
-        raise ValidationError({"captcha_token": "Invalid captcha. Please try again."})
+        return Response(
+            {"error": "Captcha verification failed"}, status=400)
     try:
         order = client.order.create({
             "amount": 10000,  # ₹150 in paise is 15000
