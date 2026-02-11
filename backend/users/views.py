@@ -1,5 +1,6 @@
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view, throttle_classes, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from backend.settings import RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
 from .serializers import StudentPaymentSerializer
 from rest_framework.throttling import UserRateThrottle
@@ -18,6 +19,7 @@ class PaymentVerifyThrottle(UserRateThrottle):
 
 
 # view to create razorpay order
+
 @ratelimit(key="ip", rate="10/m", block=False)
 @api_view(["POST"])
 def create_order(request):
