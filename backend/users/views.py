@@ -1,22 +1,143 @@
+import razorpay
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.throttling import UserRateThrottle
 from backend.settings import RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET,EMAIL_HOST_USER
 from .serializers import StudentPaymentSerializer
-from rest_framework.throttling import UserRateThrottle
 from .models import Student
+from .utils.recaptcha import verify_recaptcha
+from .utils.otp_manager import OTPManager
 from django.db import transaction
 from django_ratelimit.decorators import ratelimit
 from django.core.mail import send_mail
+from django.core.validators import RegexValidator
+from django.utils.decorators import method_decorator
+import logging
 
-from .utils.recaptcha import verify_recaptcha
 # Create your views here.
-import razorpay
 client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 class PaymentVerifyThrottle(UserRateThrottle):
     rate = "5/min"
 
 
+# VERIFY OTP VIEWfrom rest_framework.views import APIView
+
+logger = logging.getLogger(__name__)
+
+
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST'), name='post')
+class SendOTPView(APIView):
+    def post(self, request):
+        try:
+            email = request.data.get('email')
+            
+            if not email:
+                return Response(
+                    {'success': False, 'message': 'Email is required'},
+                    status=400
+                )
+            
+            # Email format validation
+            email_validator = RegexValidator(
+                regex=r'^[a-zA-Z]+25\d+@akgec\.ac\.in$',
+                message="Email must be in correct format. Use College Email"
+            )
+            try:
+                email_validator(email)
+            except Exception as e:
+                logger.error(f"Email validation error: {str(e)}")
+                return Response(
+                    {'success': False, 'message': f'Invalid email format: {str(e)}'},
+                    status=400
+                )
+            
+            ip_address = self.get_client_ip(request)
+            
+            # OTPManager handles cooldown, attempts, email
+            success, message = OTPManager.send_otp(email, ip_address)
+            
+            return Response(
+                {'success': success, 'message': message},
+                status=200 if success else 429
+            )
+        
+        except Exception as e:
+            logger.error(f"SendOTPView error: {str(e)}")
+            return Response(
+                {'success': False, 'message': 'Internal server error'},
+                status=500
+            )
+    
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+@method_decorator(ratelimit(key='ip', rate='5/m', method='POST'), name='post')
+class VerifyOTPView(APIView):
+    def post(self, request):
+        try:
+            email = request.data.get('email')
+            otp = request.data.get('otp')
+            
+            if not email or not otp:
+                return Response(
+                    {'success': False, 'message': 'Email and OTP are required'},
+                    status=400
+                )
+            if len(otp) != OTPManager.OTP_LENGTH:
+                return Response(
+                    {'success': False, 'message': "invalid OTP format"},
+                    status=400
+                )
+            # Email format validation
+            email_validator = RegexValidator(
+                regex=r'^[a-zA-Z]+25\d+@akgec\.ac\.in$' ,#test email
+                message="Email must be in correct format. Use College Email"
+            )
+            try:
+                email_validator(email)
+            except Exception as e:
+                logger.error(f"Email validation error: {str(e)}")
+                return Response(
+                    {'success': False, 'message': f'Invalid email format: {str(e)}'},
+                    status=400
+                )
+            
+            ip_address = self.get_client_ip(request)
+            if not ip_address:
+                return Response(
+                    {'success': False, 'message': 'Could not determine IP address'},
+                    status=400
+                )
+            # OTPManager handles IP rate limit, attempts, verification
+            success, message = OTPManager.verify_otp(email, otp, ip_address)
+            
+            return Response(
+                {'success': success, 'message': message},
+                status=200 if success else 400
+            )
+        
+        except Exception as e:
+            logger.error(f"VerifyOTPView error: {str(e)}")
+            return Response(
+                {'success': False, 'message': 'Internal server error'},
+                status=500
+            )
+    
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
 # view to create razorpay order
 
 @ratelimit(key="ip", rate="10/m", block=False)

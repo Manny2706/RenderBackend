@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import RegexValidator
-
+from django.utils import timezone
 
 # Create your models here.
 Gender_CHOICES={
@@ -47,3 +47,5 @@ class Student(models.Model):
 
     def __str__(self):
         return f"{self.student_no} - {self.name}"
+    class Meta:
+        ordering = ['-created_at']

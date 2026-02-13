@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Student
+from .models import  Student
 
 class StudentPaymentSerializer(serializers.ModelSerializer):
 
@@ -52,3 +52,4 @@ class StudentPaymentSerializer(serializers.ModelSerializer):
             "razorpay_payment_id": {"required": True},
             "razorpay_signature": {"required": True},
         }
+
