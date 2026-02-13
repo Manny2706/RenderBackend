@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.validators import RegexValidator
+
 
 # Create your models here.
 Gender_CHOICES={
@@ -6,11 +8,37 @@ Gender_CHOICES={
     ( 'F','Female')
 }
 class Student(models.Model):
-    student_no = models.CharField(max_length=20, unique=True)
+    student_no = models.CharField(
+        max_length=8,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^25\d{6}$',
+                message='Student number must start with 25 followed by 6 digits'
+            )
+        ]
+    )
     name = models.CharField(max_length=100)
     section = models.CharField(max_length=10)
     hostler = models.BooleanField(default=False)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[a-zA-Z]+25\d+@akgec\.ac\.in$',
+                message='Email must be in format: name25rollno@akgec.ac.in'
+            )
+        ]
+    )
+    phone_no = models.CharField(
+        max_length=13,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{10,13}$',
+                message='Phone number must be 10 to 13 digits'
+            )
+        ]
+    )
     gender = models.CharField(max_length=1, choices=Gender_CHOICES)
     razorpay_payment_id = models.CharField(max_length=100, unique=True)
     razorpay_signature = models.CharField(max_length=200)

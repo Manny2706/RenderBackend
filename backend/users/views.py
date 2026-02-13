@@ -1,13 +1,12 @@
-from rest_framework.decorators import api_view, throttle_classes, permission_classes
+from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from backend.settings import RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
+from backend.settings import RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET,EMAIL_HOST_USER
 from .serializers import StudentPaymentSerializer
 from rest_framework.throttling import UserRateThrottle
-# from rest_framework.exceptions import ValidationError
 from .models import Student
 from django.db import transaction
 from django_ratelimit.decorators import ratelimit
+from django.core.mail import send_mail
 
 from .utils.recaptcha import verify_recaptcha
 # Create your views here.
@@ -65,10 +64,12 @@ def verify_and_save(request):
             {"error": "Too many requests. Please try again later."},
             status=429
         )
+    # Validate input data
     serializer = StudentPaymentSerializer(data=request.data)
+    # Check if serializer is valid
     if not serializer.is_valid():
         return Response(serializer.errors, status=400)
-
+    # Get validated data
     data = serializer.validated_data
 
     # Block replay attack
@@ -79,7 +80,11 @@ def verify_and_save(request):
             {"error": "Payment already processed"},
             status=400
         )
-
+    # Validate email format
+    if not(str(data["name"]).split()[0]+str(data["student_no"])+"@akgec.ac.in" == str(data["email"])):
+        return Response(
+            {"error": "Email is in wrong format"},
+            status=400)
     try:
         # Verify Razorpay signature (NON-NEGOTIABLE)
         client.utility.verify_payment_signature({
@@ -88,17 +93,38 @@ def verify_and_save(request):
             "razorpay_signature": data["razorpay_signature"],
         })
 
-        # Atomic save
+        # Atomic save in case of any failure, the transaction will be rolled back means no student will be created without valid payment and no payment will be considered successful without creating student record
         with transaction.atomic():
             student = serializer.save()
-
+                
+        send_mail(
+            subject="Registration Successful",
+            message=f"Dear {student.name},\n\nYour registration for the event has been successful. Your student number is {student.student_no}.\n\nThank you for registering!",
+            from_email=EMAIL_HOST_USER,
+            recipient_list=data.get("email"),
+            fail_silently=False
+        )
         return Response({
             "message": "Payment successful. Registration completed.",
             "student_id": student.id
         }, status=201)
-
+        
     except Exception:
         return Response(
             {"error": "Payment verification failed"},
             status=400
         )
+        
+# VIEW TO TEST EMAIL FUNCTIONALITY
+# @api_view(["POST"])
+# def test_email(request):
+#     from django.core.mail import send_mail
+#     data = request.data
+#     send_mail(
+#         subject="Test Email from Django",
+#         message="This is a test email sent from the Django backend.",
+#         from_email=EMAIL_HOST_USER,
+#         recipient_list=[data.get("email")],
+#         fail_silently=False
+#     )
+#     return Response({"message": "Test email sent successfully"})
