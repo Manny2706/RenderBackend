@@ -1,51 +1,62 @@
 from django.db import models
 from django.core.validators import RegexValidator
-from django.utils import timezone
 
-# Create your models here.
-Gender_CHOICES={
-    ('M', 'Male'),
-    ( 'F','Female')
-}
+
 class Student(models.Model):
-    student_no = models.CharField(
-        max_length=8,
-        unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^25\d{6}$',
-                message='Student number must start with 25 followed by 6 digits'
-            )
-        ]
+    BRANCH_CHOICES = [
+        ('CSE', 'CSE'),
+        ('CS', 'CS'),
+        ('CS-IT', 'CS-IT'),
+        ('CSE-DS', 'CSE-DS'),
+        ('CS-HINDI', 'CS-HINDI'),
+        ('CSE-AIML', 'CSE-AIML'),
+        ('IT', 'IT'),
+        ('AIML', 'AIML'),
+        ('ECE', 'ECE'),
+        ('ME', 'ME'),
+        ('EN', 'EN'),
+        ('CIVIL', 'CIVIL'),
+    ]
+    
+    PAYMENT_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('SUCCESS', 'Success'),
+        ('FAILED', 'Failed'),
+    ]
+    GENDER_CHOICES = [
+        ('MALE', 'Male'),
+        ('FEMALE', 'Female'),
+    ]
+    email_regex = RegexValidator(
+        regex=r'^[a-zA-Z]+25\d+@akgec\.ac\.in$',
+        message="Email must end with @akgec.ac.in"
+    )
+    
+    phone_regex = RegexValidator(
+        regex=r'^\d{10,12}$',
+        message="Phone number must be 10 to 12 digits"
+    )
+    student_number_regex = RegexValidator(
+        regex=r'^25\d{4,6}$',
+        message="Student number must start with 25 and be 6 to 8 digits long"
     )
     name = models.CharField(max_length=100)
-    section = models.CharField(max_length=10)
+    email = models.EmailField(unique=True, validators=[email_regex],null=False, blank=False)
+    phone = models.CharField(validators=[phone_regex], max_length=12)
+    student_number = models.CharField(max_length=20, unique=True, validators=[student_number_regex] )
+    branch = models.CharField(max_length=20, choices=BRANCH_CHOICES)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     hostler = models.BooleanField(default=False)
-    email = models.EmailField(
-        unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^[a-zA-Z]+25\d+@akgec\.ac\.in$',
-                message='Email must be in format: name25rollno@akgec.ac.in'
-            )
-        ]
-    )
-    phone_no = models.CharField(
-        max_length=13,
-        validators=[
-            RegexValidator(
-                regex=r'^\d{10,13}$',
-                message='Phone number must be 10 to 13 digits'
-            )
-        ]
-    )
-    gender = models.CharField(max_length=1, choices=Gender_CHOICES)
-    razorpay_payment_id = models.CharField(max_length=100, unique=True)
-    razorpay_signature = models.CharField(max_length=200)
-
+    is_email_verified = models.BooleanField(default=False)
+    payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
+    is_present = models.BooleanField(default=False)
+    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    updated_at = models.DateTimeField(auto_now=True)
+    
     def __str__(self):
-        return f"{self.student_no} - {self.name}"
+        return f"{self.name} - {self.student_number}"
     class Meta:
         ordering = ['-created_at']

@@ -50,6 +50,8 @@ class OTPManager:
             )
         except Exception as e:
             return False, f"Failed to send OTP email: {str(e)}"
+        
+        return True, "OTP sent successfully"
     
     @staticmethod
     def verify_otp(email, otp_input, ip_address):

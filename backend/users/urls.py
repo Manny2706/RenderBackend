@@ -1,9 +1,10 @@
 from django.urls import path
-from .views import VerifyOTPView, create_order, verify_and_save,SendOTPView #, test_email
+from .views import SendOTPView, VerifyOTPAPIView , PaymentInitiationAPIView ,RazorpayWebhookAPIView , PaymentStatusAPIView #, test_email
 urlpatterns = [
-    path("create-order/", create_order, name="create_order"),
-    path("verify-and-save/", verify_and_save, name="verify_and_save"),
     #path("test-email/", test_email, name="test_email"),
     path('send-otp/', SendOTPView.as_view(), name='send-otp'),
-    path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
+    path('verify-otp/', VerifyOTPAPIView.as_view(), name='verify-otp'),
+    path('payment-initiation/', PaymentInitiationAPIView.as_view(), name='payment-initiation'),
+    path('razorpay-webhook/', RazorpayWebhookAPIView.as_view(), name='razorpay-webhook'),   
+    path('payment-status/', PaymentStatusAPIView.as_view(), name='payment-status'),
 ]
